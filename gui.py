@@ -75,7 +75,7 @@ class Application(tk.Frame):
         ipv4_label = tk.Label(self, text="Ipv4 Address(es)")
         ipv4_label.grid(row=6, column=0, padx=5, pady=5, ipadx=5, ipady=5)
 
-        ipv4_frame = tk.Frame(self, height=250, width=250)
+        ipv4_frame = tk.Frame(self, height=350, width=250)
         ipv4_frame.columnconfigure(0, weight=10)
         ipv4_frame.grid_propagate(False)
         ipv4_frame.grid(row=7, column=0, padx=15, pady=15)
@@ -90,7 +90,7 @@ class Application(tk.Frame):
         ipv6_label = tk.Label(self, text="Ipv6 Address(es)")
         ipv6_label.grid(row=6, column=1, padx=5, pady=5, ipadx=5, ipady=5)
 
-        ipv6_frame = tk.Frame(self, height=250, width=250)
+        ipv6_frame = tk.Frame(self, height=350, width=250)
         ipv6_frame.columnconfigure(0, weight=10)
         ipv6_frame.grid_propagate(False)
         ipv6_frame.grid(row=7, column=1, padx=15, pady=15)
@@ -105,19 +105,15 @@ class Application(tk.Frame):
         mail_label = tk.Label(self, text="Mail Server(s)")
         mail_label.grid(row=6, column=2, padx=5, pady=5, ipadx=5, ipady=5)
 
-        mail_frame = tk.Frame(self, height=250, width=250)
+        mail_frame = tk.Frame(self, height=350, width=250)
         mail_frame.columnconfigure(0, weight=10)
         mail_frame.grid_propagate(False)
         mail_frame.grid(row=7, column=2, padx=15, pady=15)
 
         self._mail_servers = tk.Text(mail_frame)
-        # scrollbar = tk.Scrollbar(mail_frame)
-        # self._mail_servers.config(yscrollcommand=scrollbar.set)
-        # scrollbar.config(command=self._mail_servers.yview)
         self._mail_servers.config(font=("Helvetica", 9))
         self._mail_servers.config(state="disabled")
         self._mail_servers.grid()
-        # scrollbar.grid(row=0, column=1)
 
     @staticmethod
     def set_text(name, new):
