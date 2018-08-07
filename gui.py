@@ -4,6 +4,9 @@ from ass2partc import dns_lookup
 
 
 class Application(tk.Frame):
+    """
+    The foundations of the DNS lookup tool application
+    """
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -19,7 +22,8 @@ class Application(tk.Frame):
         hostname_label.grid(row=1, column=0, sticky="e", padx=5, pady=5)
 
         self._enter_hostname = tk.Entry(self)
-        self._enter_hostname.grid(row=1, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
+        self._enter_hostname.grid(row=1, column=1, sticky="nsew", padx=5,
+                                  pady=5, ipadx=5, ipady=5)
 
         # ENTER DNS SERVER IP ADDRESS
 
@@ -28,18 +32,22 @@ class Application(tk.Frame):
 
         self._enter_dns = tk.Entry(self)
         self._enter_dns.insert(0, "8.8.8.8")
-        self._enter_dns.grid(row=2, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
+        self._enter_dns.grid(row=2, column=1, sticky="nsew", padx=5, pady=5,
+                             ipadx=5, ipady=5)
 
         # SELECT NORMAL OR REVERSE DNS LOOKUP
 
         self._reverse = tk.IntVar()
-        self._select_reverse = tk.Checkbutton(self, text='Reverse DNS query', variable=self._reverse)
+        self._select_reverse = tk.Checkbutton(self, text='Reverse DNS query',
+                                              variable=self._reverse)
         self._select_reverse.grid(row=1, column=2, padx=5, pady=5)
 
         # SUBMIT REQUEST
 
-        self._submit_button = tk.Button(self, text="Submit", command=self.click_submit)
-        self._submit_button.grid(row=2, column=2, padx=5, pady=5, ipadx=10, ipady=5)
+        self._submit_button = tk.Button(self, text="Submit",
+                                        command=self.click_submit)
+        self._submit_button.grid(row=2, column=2, padx=5, pady=5, ipadx=10,
+                                 ipady=5)
 
         # RESULTS SECTION
 
@@ -51,24 +59,18 @@ class Application(tk.Frame):
         hostname_result = tk.Label(self, text="Host name:")
         hostname_result.grid(row=4, column=0, sticky="e", padx=5, pady=5)
 
-        # self._hostname_text = tk.Entry(self)
-        # self._hostname_text.config(state='disabled')
-        # self._hostname_text.grid(row=4, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
-
         self._hostname_text = tk.Label(self)
-        self._hostname_text.grid(row=4, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
+        self._hostname_text.grid(row=4, column=1, sticky="nsew", padx=5, pady=5,
+                                 ipadx=5, ipady=5)
 
         # DISPLAY CANONICAL NAME
 
         canonical_name = tk.Label(self, text="Canonical name:")
         canonical_name.grid(row=5, column=0, sticky="e", padx=5, pady=5)
 
-        # self._canonical_text = tk.Entry(self)
-        # self._canonical_text.config(state='disabled')
-        # self._canonical_text.grid(row=5, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
-
         self._canonical_text = tk.Label(self)
-        self._canonical_text.grid(row=5, column=1, sticky="nsew", padx=5, pady=5, ipadx=5, ipady=5)
+        self._canonical_text.grid(row=5, column=1, sticky="nsew", padx=5,
+                                  pady=5, ipadx=5, ipady=5)
 
         # DISPLAY IPV4 ADDRESSES
 
@@ -117,12 +119,20 @@ class Application(tk.Frame):
 
     @staticmethod
     def set_text(name, new):
+        """
+        Sets the text of the given name field to the new message given
+        :param name: the name of the widget to set the text of
+        :param new: the new message to be displayed
+        """
         name.config(state="normal")
         name.delete(1.0, END)
         name.insert(END, new)
         name.config(state="disabled")
 
     def click_submit(self):
+        """
+        Performs DNS lookup operations when the submit button is clicked
+        """
         url = self._enter_hostname.get()
         dns_server = self._enter_dns.get()
         reverse = self._reverse.get()
@@ -163,6 +173,9 @@ class Application(tk.Frame):
 
 
 class DNSApp(object):
+    """
+    Top level running of the DNS lookup tool
+    """
 
     def __init__(self, master):
         self.master = master

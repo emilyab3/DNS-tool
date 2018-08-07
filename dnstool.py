@@ -2,7 +2,10 @@ import socket
 import random
 import sys
 
+# default header without the ID part
 HEADER_NO_ID = "01 00 00 01 00 00 00 00 00 00"
+
+# numbers for different types of requests
 A = 1
 CNAME = 5
 PTR = 12
@@ -10,18 +13,24 @@ MX = 15
 AAAA = 28
 QCLASS = "00 01"
 
+# used for reverse DNS requests
+REVERSE_DNS = ".in-addr.arpa"
+
+# default DNS address and port
 DNS_ADDRESS = "8.8.8.8"
-# DNS_ADDRESS = "130.102.71.160"
 DNS_PORT = 53
 
 HEX_FORMAT = 16
-
-REVERSE_DNS = ".in-addr.arpa"
 
 MIN_POINTER_VALUE = 192
 
 
 def generate_id() -> str:
+    """
+    Generates a random ID for a request
+
+    :return: the generated ID
+    """
     new_id = ""
     for i in range(4):
         new_id += str(random.randrange(0, 9))
@@ -29,11 +38,25 @@ def generate_id() -> str:
     return new_id
 
 
-def hex_string(num: int, padding: int):
+def hex_string(num: int, padding: int) -> str:
+    """
+    Converts the given num to a hexadecimal string
+
+    :param num: the number to convert to hex
+    :param padding: the desired length of the hex string (will add extra
+    padding if required)
+    :return: the formatted hex string
+    """
     return "{0:0{1}x}".format(num, padding)
 
 
 def normal_query(url: str) -> str:
+    """
+    Creates the qname part of a query, to be used as part of a greater query
+
+    :param url: the url to be included in this part of the query
+    :return: the query section as a hexadecimal string
+    """
     qname = ""
     for label in url.split("."):
         length = hex_string(len(label), 2)
@@ -49,9 +72,14 @@ def normal_query(url: str) -> str:
 
 
 def compose_request(request_id: str, url: str, current_qtype: int) -> str:
-    # url_ascii = url.encode("ascii")
-    # bytes(bytearray.fromhex(hex_string))
+    """
+    Creates a DNS request to be sent to the given url
 
+    :param request_id: the ID used to identify the request
+    :param url: the url to send the query to
+    :param current_qtype: the type of the request
+    :return: a string containing the hexadecimal representation of the query
+    """
     # HEADER
     header = request_id + HEADER_NO_ID.replace(" ", "")
 
@@ -69,10 +97,13 @@ def compose_request(request_id: str, url: str, current_qtype: int) -> str:
 
 
 def reverse_query(ip: str) -> str:
-    parts = ip.split(".")
+    """
+    Composes a reverse DNS lookup request using an IP address
 
-    # for i, part in enumerate(parts):
-    #     parts[i] = part[::-1]
+    :param ip: the IP address to be used in the request
+    :return: the hexadecimal string containing the reverse query
+    """
+    parts = ip.split(".")
 
     flipped_ip = ".".join(reversed(parts))
     flipped_ip += REVERSE_DNS
@@ -81,10 +112,16 @@ def reverse_query(ip: str) -> str:
 
 
 def send_udp_message(message: str, dns_server: str) -> str:
+    """
+    Sends a UDP message to given DNS server and retrieves a response
+
+    :param message: message to be sent
+    :param dns_server: server to send the request to
+    :return: the response from the server
+    """
     server_address = (dns_server, DNS_PORT)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # result = ""
     try:
         byte_message = bytes.fromhex(message)
         sock.sendto(byte_message, server_address)
@@ -100,6 +137,15 @@ def send_udp_message(message: str, dns_server: str) -> str:
 
 
 def check_response(response: str, actual_id: str) -> int:
+    """
+    Checks that a response to a request is correctly matched up (has the same
+    ID as the initial request), and returns the number of answers contained
+    in the response as an integer
+
+    :param response: the response to check for validity
+    :param actual_id: the ID to compare the response's ID against
+    :return: the number of answers contained in the response
+    """
     response_id = response[0:4]
 
     if response_id != actual_id:
@@ -111,6 +157,14 @@ def check_response(response: str, actual_id: str) -> int:
 
 
 def parse_response_ipv4(response: str, start_index: int) -> tuple:
+    """
+    Parses the response to an IPv4 request
+
+    :param response: the response received
+    :param start_index: the index in the response at which the IPv4 response
+    begins
+    :return: a tuple containing the IPv4 address and the length of the response
+    """
     end_index = start_index + 4
     data_length = int(response[start_index:end_index], HEX_FORMAT)
     num_hex = 2 * data_length
@@ -125,6 +179,14 @@ def parse_response_ipv4(response: str, start_index: int) -> tuple:
 
 
 def parse_response_ipv6(response: str, start_index: int) -> tuple:
+    """
+    Parses the response to an IPv6 request
+
+    :param response: the response received
+    :param start_index: the index in the response at which the IPv6 response
+    begins
+    :return: a tuple containing the IPv6 address and the length of the response
+    """
     end_index = start_index + 4
     data_length = int(response[start_index:end_index], HEX_FORMAT)
     num_hex = 2 * data_length
@@ -157,6 +219,13 @@ def parse_response_ipv6(response: str, start_index: int) -> tuple:
 
 
 def parse_response_reverse(response: str, start_index: int) -> tuple:
+    """
+    Parses the response to a reverse DNS lookup request
+
+    :param response: the response received
+    :param start_index: the index in the response at which the response begins
+    :return: a tuple containing the hostname and the length of the response
+    """
     end_index = start_index + 4
     data_length = int(response[start_index:end_index], HEX_FORMAT)
     num_hex = 2 * data_length
@@ -182,6 +251,13 @@ def parse_response_reverse(response: str, start_index: int) -> tuple:
 
 
 def follow_pointer(response: str, offset: int) -> str:
+    """
+    Follows a pointer to the location of the offset in the response
+
+    :param response: the response which the pointer is in
+    :param offset: the location to move to
+    :return: the data being pointed to
+    """
     result = []
     while True:
         current = response[offset:offset + 2]
@@ -207,6 +283,14 @@ def follow_pointer(response: str, offset: int) -> str:
 
 
 def parse_response_mail(response: str, response_only: str, start_index: int):
+    """
+    Parses the response to a mail request
+
+    :param response: the response received
+    :param start_index: the index in the response at which the mail response
+    begins
+    :return: a tuple containing the IP address and the length of the response
+    """
     end_index = start_index + 4
     data_length = int(response_only[start_index:end_index], HEX_FORMAT)
     num_hex = 2 * data_length
@@ -236,7 +320,16 @@ def parse_response_mail(response: str, response_only: str, start_index: int):
     return ".".join(result), num_hex
 
 
-def parse_response_canonical(response: str, response_only: str, start_index: int) -> tuple:
+def parse_response_canonical(
+        response: str, response_only: str,start_index: int) -> tuple:
+    """
+    Parses the response to a canonical request
+
+    :param response: the response received
+    :param start_index: the index in the response at which the canonical
+    response begins
+    :return: a tuple containing the IP address and the length of the response
+    """
     end_index = start_index + 4
     data_length = int(response_only[start_index:end_index], HEX_FORMAT)
     num_hex = 2 * data_length
@@ -265,6 +358,13 @@ def parse_response_canonical(response: str, response_only: str, start_index: int
 
 
 def get_type(message: str, start_index: int) -> int:
+    """
+    Determines the type of a response within the given message
+
+    :param message: the message containing the response to identify the type of
+    :param start_index: the index at which the response starts in the message
+    :return: the type of the response
+    """
     type_index = start_index + 4
     qtype = message[type_index:type_index + 4]
 
@@ -272,6 +372,15 @@ def get_type(message: str, start_index: int) -> int:
 
 
 def process_request(url: str, request_type: int, dns_server: str) -> list:
+    """
+    Handles a request to the given URL via the given DNS server
+
+    :param url: URL to determine the IP address of
+    :param request_type: type of the request
+    :param dns_server: DNS server to direct the request to
+    :return: the retrieved IP address(es) (or hostname, in the case of a
+    reverse lookup)
+    """
     ips = []
 
     request_id = generate_id()
@@ -290,19 +399,28 @@ def process_request(url: str, request_type: int, dns_server: str) -> list:
     for i in range(answers):
         answer_type = get_type(response_only, current_answer_index)
         if answer_type == A:
-            data, length = parse_response_ipv4(response_only, current_answer_index + 20)
+            data, length = parse_response_ipv4(
+                response_only, current_answer_index + 20)
             ips.append(data)
+
         elif answer_type == AAAA:
-            data, length = parse_response_ipv6(response_only, current_answer_index + 20)
+            data, length = parse_response_ipv6(
+                response_only, current_answer_index + 20)
             ips.append(data)
+
         elif answer_type == PTR:
-            data, length = parse_response_reverse(response_only, current_answer_index + 20)
+            data, length = parse_response_reverse(
+                response_only, current_answer_index + 20)
             ips.append(data)
+
         elif answer_type == MX:
-            data, length = parse_response_mail(response, response_only, current_answer_index + 20)
+            data, length = parse_response_mail(
+                response, response_only, current_answer_index + 20)
             ips.append(data)
+
         elif answer_type == CNAME:
-            data, length = parse_response_canonical(response, response_only, current_answer_index + 20)
+            data, length = parse_response_canonical(
+                response, response_only, current_answer_index + 20)
             if request_type == CNAME:
                 ips.append(data)
 
@@ -311,7 +429,15 @@ def process_request(url: str, request_type: int, dns_server: str) -> list:
     return ips
 
 
-def dns_lookup(url: str, dns_server: str, reverse: bool):
+def dns_lookup(url: str, dns_server: str, reverse: bool) -> dict:
+    """
+    Performs a DNS lookup of the given url/IP address
+
+    :param url: the url/IP address to lookup
+    :param dns_server: the DNS server to request the information from
+    :param reverse: True if the query is a reverse lookup, False otherwise
+    :return: a dictionary containing information about the response
+    """
     result = {}
 
     if reverse:
@@ -327,20 +453,22 @@ def dns_lookup(url: str, dns_server: str, reverse: bool):
 
 
 def main():
-    # print(process_request("remote.labs.eait.uq.edu.au", A, socket.AF_INET))
-    # dns_server = "130.102.71.160"
-    dns_server = "8.8.8.8"
+    """
+    Demonstrates the functionality of the above functions
+    """
+
+    # example URL
     url = "manna.eait.uq.edu.au"
 
     print("Host name: " + url + "\n")
-    ipv4 = process_request(url, A, dns_server)
+    ipv4 = process_request(url, A, DNS_ADDRESS)
     print("IPv4 Address(es):")
     for ip4 in ipv4:
         print(ip4)
 
     print("")
 
-    ipv6 = process_request(url, AAAA, dns_server)
+    ipv6 = process_request(url, AAAA, DNS_ADDRESS)
     print("IPv6 Address(es):")
     for ip6 in ipv6:
         print(ip6)
@@ -348,21 +476,20 @@ def main():
     print("")
 
     print("Reverse DNS Host Name:")
-    for host_name in process_request("130.102.79.33", PTR, dns_server):
-        # manna -> "130.102.79.33"
+    for host_name in process_request("130.102.79.33", PTR, DNS_ADDRESS):
         print(host_name)
 
     print("")
 
     print("Mail Servers:")
-    mx = process_request(url, MX, dns_server)
+    mx = process_request(url, MX, DNS_ADDRESS)
     for mail_server in mx:
         print(mail_server)
 
     print("")
 
     print("Canonical Host Name")
-    cname = process_request(url, CNAME, dns_server)
+    cname = process_request(url, CNAME, DNS_ADDRESS)
     for canonical in cname:
         print(canonical)
 
